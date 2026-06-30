@@ -4,10 +4,12 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localho
 
 const API = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,
+  withCredentials: true, // Bổ sung dòng này để khớp với cấu hình CORS của Backend
   headers: {
     "Content-Type": "application/json",
   },
 });
+
 API.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
