@@ -149,7 +149,7 @@ const Home = () => {
                   Tham gia đấu giá ngay <FiArrowRight />
                 </Link>
                 <Link 
-                  to="/seller/my-auctions" 
+                  to={(!user || user?.role === 'USER') ? "/register-seller" : "/seller/my-auctions"} 
                   className="px-8 py-4 bg-white text-gray-900 font-bold rounded-2xl shadow-sm border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all flex items-center justify-center"
                 >
                   Đăng bán tài sản

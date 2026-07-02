@@ -11,8 +11,11 @@ import AuctionList from './pages/client/AuctionList';
 import AuctionDetail from './pages/client/AuctionDetail';
 import Profile from './pages/client/Profile';
 import Watchlists from './pages/client/Watchlists';
+import SellerRegistration from './pages/client/SellerRegistration';
 import ManageAuctions from './pages/seller/ManageAuctions';
 import Auth from './pages/client/Auth';
+import ForgotPassword from './pages/client/ForgotPassword';
+import ResetPassword from './pages/client/ResetPassword';
 import Unauthorized from './pages/client/Unauthorized';
 import News from './pages/client/News';
 import Articles from './pages/client/Articles';
@@ -40,6 +43,7 @@ import TransactionManage from './pages/admin/TransactionManage';
 import ReviewManage from './pages/admin/ReviewManage';
 import NewsManage from './pages/admin/NewsManage';
 import NotificationManage from './pages/admin/NotificationManage';
+import ContactManage from './pages/admin/ContactManage';
 import WatchlistManage from './pages/admin/WatchlistManage';
 import AuditLogManage from './pages/admin/AuditLogManage';
 import ArticleManage from './pages/admin/ArticleManage';
@@ -77,6 +81,8 @@ function App() {
             <Route path="faq" element={<FAQ />} />
             <Route path="contact" element={<Contact />} />
             <Route path="auth" element={<Auth />} />
+            <Route path="forgot-password" element={<ForgotPassword />} />
+            <Route path="reset-password" element={<ResetPassword />} />
             <Route path="unauthorized" element={<Unauthorized />} />
 
             {/* Nhóm Chỉ người dùng có tài khoản */}
@@ -93,6 +99,15 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['USER', 'SELLER', 'ADMIN']}>
                   <Watchlists />
+                </ProtectedRoute>
+              } 
+            />
+
+            <Route 
+              path="register-seller" 
+              element={
+                <ProtectedRoute allowedRoles={['USER']}>
+                  <SellerRegistration />
                 </ProtectedRoute>
               } 
             />
@@ -134,6 +149,7 @@ function App() {
             <Route path="news" element={<NewsManage />} />
             <Route path="articles" element={<ArticleManage />} />
             <Route path="notifications" element={<NotificationManage />} />
+            <Route path="contacts" element={<ContactManage />} />
             <Route path="watchlists" element={<WatchlistManage />} />
             <Route path="audit-logs" element={<AuditLogManage />} />
             <Route path="settings" element={<AdminSettings />} />

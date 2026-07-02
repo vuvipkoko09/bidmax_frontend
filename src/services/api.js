@@ -1,6 +1,8 @@
 import axios from "axios";
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+// Backend URL đã được cấu hình tự động
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (isLocalhost ? "http://localhost:8080" : "https://bidmax-backend.onrender.com");
 
 const API = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,

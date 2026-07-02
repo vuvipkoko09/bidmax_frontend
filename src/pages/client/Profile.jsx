@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FiUser, FiActivity, FiHeart, FiFileText, FiDollarSign, FiEdit2, FiSave, FiX, FiAward } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import API from '../../services/api';
+import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -12,21 +13,33 @@ const Profile = () => {
   const [depositAmount, setDepositAmount] = useState('');
   const [isDepositing, setIsDepositing] = useState(false);
   const [wonAuctions, setWonAuctions] = useState([]);
+  const [watchlist, setWatchlist] = useState([]);
+  const [bidsHistory, setBidsHistory] = useState([]);
   const [isPaying, setIsPaying] = useState(false);
   
-  const { user, refreshUser } = useAuth();
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [pwdData, setPwdData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+  const [isSubmittingPwd, setIsSubmittingPwd] = useState(false);
+  
+  const { user, refreshUser, setUser } = useAuth();
 
   useEffect(() => {
     if (user?.id) {
-      const fetchWonAuctions = async () => {
+      const fetchUserData = async () => {
         try {
-          const res = await API.get('/client/my-won-auctions', { params: { userId: user.id } });
-          setWonAuctions(res.data);
+          const [wonRes, watchRes, bidRes] = await Promise.all([
+            API.get('/client/my-won-auctions', { params: { userId: user.id } }),
+            API.get(`/watchlists/user/${user.id}`),
+            API.get(`/bids/user/${user.id}`)
+          ]);
+          setWonAuctions(wonRes.data);
+          setWatchlist(watchRes.data);
+          setBidsHistory(bidRes.data);
         } catch (error) {
-          console.error("Lỗi khi tải tài sản trúng đấu giá:", error);
+          console.error("Lỗi khi tải dữ liệu user:", error);
         }
       };
-      fetchWonAuctions();
+      fetchUserData();
     }
   }, [user]);
 
@@ -85,7 +98,8 @@ const Profile = () => {
     defaultValues: {
       fullName: user?.username || '',
       phone: user?.phone || '',
-      address: user?.address || ''
+      address: user?.address || '',
+      cccd: user?.cccd || ''
     }
   });
 
@@ -95,22 +109,13 @@ const Profile = () => {
       reset({
         fullName: user.username || '',
         phone: user.phone || '',
-        address: user.address || ''
+        address: user.address || '',
+        cccd: user.cccd || ''
       });
     }
   }, [user, reset]);
 
-  // Mock Watchlist
-  const mockWatchlist = [
-    { id: 1, title: 'Đồng hồ Rolex Submariner Date 126610LN', currentPrice: 345000000, status: 'ACTIVE' },
-    { id: 2, title: 'Tranh sơn dầu nghệ thuật "Mùa Thu Hà Nội"', currentPrice: 28000000, status: 'ACTIVE' }
-  ];
-
-  // Mock Bids History
-  const mockBidsHistory = [
-    { id: 101, title: 'Đồng hồ Rolex Submariner', myBid: 340000000, maxBid: 345000000, time: '2026-06-22 10:15', status: 'OUTBID' },
-    { id: 102, title: 'Tranh sơn dầu nghệ thuật', myBid: 28000000, maxBid: 28000000, time: '2026-06-22 11:30', status: 'LEADING' }
-  ];
+  // Removed Mocks
 
   const formatCurrency = (val) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
@@ -123,10 +128,11 @@ const Profile = () => {
         return;
       }
       
-      // Call backend API (only phone and address are expected by backend DTO)
+      // Call backend API
       await API.put(`/users/${user.id}/profile`, {
         phone: data.phone,
-        address: data.address
+        address: data.address,
+        cccd: data.cccd
       });
 
       toast.success("Cập nhật thông tin thành công!");
@@ -143,6 +149,36 @@ const Profile = () => {
     }
   };
 
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    if (pwdData.newPassword !== pwdData.confirmPassword) {
+      toast.error("Mật khẩu xác nhận không khớp!");
+      return;
+    }
+    if (pwdData.newPassword.length < 6) {
+      toast.error("Mật khẩu mới phải có ít nhất 6 ký tự!");
+      return;
+    }
+    try {
+      setIsSubmittingPwd(true);
+      await API.put(`/users/${user.id}/password`, {
+        oldPassword: pwdData.oldPassword,
+        newPassword: pwdData.newPassword
+      });
+      toast.success("Đổi mật khẩu thành công!");
+      setIsChangingPassword(false);
+      setPwdData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      console.error("Lỗi khi đổi mật khẩu:", error);
+      const msg = error.response?.data?.message || "Đổi mật khẩu thất bại!";
+      toast.error(msg);
+    } finally {
+      setIsSubmittingPwd(false);
+    }
+  };
+
+
+
   if (!user) {
     return <div className="text-center py-20">Đang tải thông tin...</div>;
   }
@@ -156,7 +192,7 @@ const Profile = () => {
         {/* Left Column: User Profile Info Card (4 Cols) */}
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm relative">
-            {!isEditing && (
+            {!isEditing && !isChangingPassword && (
               <button 
                 onClick={() => setIsEditing(true)}
                 className="absolute top-4 right-4 p-2 text-gray-400 hover:text-blue-600 transition-colors bg-gray-50 hover:bg-blue-50 rounded-full cursor-pointer"
@@ -177,26 +213,7 @@ const Profile = () => {
             </div>
 
             <div className="border-t border-gray-100 pt-4 mt-6">
-              {!isEditing ? (
-                <div className="space-y-3.5 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Email:</span>
-                    <span className="font-semibold text-gray-800">{user.email}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Số điện thoại:</span>
-                    <span className={`font-semibold ${user.phone ? 'text-gray-800' : 'text-rose-500 italic'}`}>
-                      {user.phone || 'Chưa cập nhật'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Địa chỉ:</span>
-                    <span className={`font-semibold ${user.address ? 'text-gray-800 text-right w-48' : 'text-rose-500 italic'}`}>
-                      {user.address || 'Chưa cập nhật'}
-                    </span>
-                  </div>
-                </div>
-              ) : (
+              {isEditing ? (
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 animate-in fade-in duration-300">
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-600">Tên hiển thị</label>
@@ -226,6 +243,21 @@ const Profile = () => {
                     />
                     {errors.address && <span className="text-[10px] text-red-500">{errors.address.message}</span>}
                   </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-600">Căn cước công dân (CCCD) <span className="text-red-500">*</span></label>
+                    <input 
+                      {...register('cccd', { 
+                        required: 'CCCD là bắt buộc',
+                        pattern: {
+                          value: /^\d{12}$/,
+                          message: 'CCCD phải bao gồm đúng 12 chữ số'
+                        }
+                      })}
+                      className={`w-full px-3 py-2 border ${errors.cccd ? 'border-red-500' : 'border-gray-200'} rounded-lg text-sm focus:outline-none focus:border-blue-500`}
+                      placeholder="Nhập 12 số CCCD"
+                    />
+                    {errors.cccd && <span className="text-[10px] text-red-500">{errors.cccd.message}</span>}
+                  </div>
                   
                   <div className="flex gap-2 pt-2">
                     <button 
@@ -244,6 +276,94 @@ const Profile = () => {
                     </button>
                   </div>
                 </form>
+              ) : isChangingPassword ? (
+                <form onSubmit={handlePasswordChange} className="space-y-4 animate-in fade-in duration-300">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-600">Mật khẩu cũ <span className="text-red-500">*</span></label>
+                    <input 
+                      type="password"
+                      value={pwdData.oldPassword}
+                      onChange={e => setPwdData({...pwdData, oldPassword: e.target.value})}
+                      required
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                      placeholder="Nhập mật khẩu cũ"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-600">Mật khẩu mới <span className="text-red-500">*</span></label>
+                    <input 
+                      type="password"
+                      value={pwdData.newPassword}
+                      onChange={e => setPwdData({...pwdData, newPassword: e.target.value})}
+                      required
+                      minLength={6}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                      placeholder="Mật khẩu ít nhất 6 ký tự"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-600">Xác nhận mật khẩu <span className="text-red-500">*</span></label>
+                    <input 
+                      type="password"
+                      value={pwdData.confirmPassword}
+                      onChange={e => setPwdData({...pwdData, confirmPassword: e.target.value})}
+                      required
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                      placeholder="Xác nhận lại mật khẩu mới"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2 pt-2">
+                    <button 
+                      type="button" 
+                      onClick={() => setIsChangingPassword(false)}
+                      className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-lg transition-colors cursor-pointer flex justify-center items-center gap-1"
+                    >
+                      <FiX /> Hủy
+                    </button>
+                    <button 
+                      type="submit" 
+                      disabled={isSubmittingPwd}
+                      className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition-colors shadow-sm shadow-blue-500/20 cursor-pointer flex justify-center items-center gap-1 disabled:bg-blue-400"
+                    >
+                      <FiSave /> {isSubmittingPwd ? 'Đang lưu...' : 'Đổi MK'}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="space-y-3.5 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Email:</span>
+                    <span className="font-semibold text-gray-800">{user.email}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Số CCCD:</span>
+                    <span className={`font-semibold ${user.cccd ? 'text-gray-800' : 'text-rose-500 italic'}`}>
+                      {user.cccd || 'Chưa cập nhật'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Số điện thoại:</span>
+                    <span className={`font-semibold ${user.phone ? 'text-gray-800' : 'text-rose-500 italic'}`}>
+                      {user.phone || 'Chưa cập nhật'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Địa chỉ:</span>
+                    <span className={`font-semibold ${user.address ? 'text-gray-800 text-right w-48' : 'text-rose-500 italic'}`}>
+                      {user.address || 'Chưa cập nhật'}
+                    </span>
+                  </div>
+                  
+                  <div className="pt-4 flex items-center justify-center">
+                    <button 
+                      onClick={() => setIsChangingPassword(true)}
+                      className="text-xs font-bold text-blue-600 hover:text-blue-700 underline transition-colors cursor-pointer"
+                    >
+                      Đổi mật khẩu bảo mật
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
 
@@ -259,6 +379,17 @@ const Profile = () => {
                 Nạp tiền
               </button>
             </div>
+            
+            {user.role === 'USER' && (
+              <div className="mt-4">
+                <Link 
+                  to="/register-seller"
+                  className="w-full flex items-center justify-center py-2.5 border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 font-bold text-sm rounded-lg transition-colors cursor-pointer"
+                >
+                  Đăng ký Bán hàng
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 
@@ -301,6 +432,8 @@ const Profile = () => {
           </div>
         )}
 
+
+
         {/* Right Column: Bidding Details Tabs & Tables (8 Cols) */}
         <div className="lg:col-span-8 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col">
           
@@ -314,7 +447,7 @@ const Profile = () => {
                   : 'border-transparent text-gray-400 hover:text-gray-600'
               }`}
             >
-              <FiHeart className="w-4 h-4" /> Watchlist ({mockWatchlist.length})
+              <FiHeart className="w-4 h-4" /> Watchlist ({watchlist.length})
             </button>
             <button 
               onClick={() => setActiveTab('bids')}
@@ -324,7 +457,7 @@ const Profile = () => {
                   : 'border-transparent text-gray-400 hover:text-gray-600'
               }`}
             >
-              <FiActivity className="w-4 h-4" /> Lịch sử đặt giá ({mockBidsHistory.length})
+              <FiActivity className="w-4 h-4" /> Lịch sử đặt giá ({bidsHistory.length})
             </button>
             <button 
               onClick={() => setActiveTab('won-auctions')}
@@ -391,7 +524,7 @@ const Profile = () => {
                 </div>
               )
             ) : activeTab === 'watchlist' ? (
-              mockWatchlist.length === 0 ? (
+              watchlist.length === 0 ? (
                 <p className="text-center text-sm text-gray-400 py-12">Danh sách theo dõi trống.</p>
               ) : (
                 <div className="overflow-x-auto">
@@ -402,18 +535,22 @@ const Profile = () => {
                         <th className="pb-3.5 text-xs font-bold uppercase tracking-wider">Tên sản phẩm</th>
                         <th className="pb-3.5 text-xs font-bold uppercase tracking-wider">Giá hiện tại</th>
                         <th className="pb-3.5 text-xs font-bold uppercase tracking-wider">Trạng thái</th>
+                        <th className="pb-3.5 text-xs font-bold uppercase tracking-wider">Hành động</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {mockWatchlist.map((item) => (
+                      {watchlist.map((item) => (
                         <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                          <td className="py-4 text-sm text-gray-400 font-mono">#{item.id}</td>
-                          <td className="py-4 text-sm font-bold text-gray-900">{item.title}</td>
+                          <td className="py-4 text-sm text-gray-400 font-mono">#{item.auctionId}</td>
+                          <td className="py-4 text-sm font-bold text-gray-900">{item.auctionTitle}</td>
                           <td className="py-4 text-sm font-semibold text-blue-600">{formatCurrency(item.currentPrice)}</td>
                           <td className="py-4 text-sm">
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                               {item.status}
                             </span>
+                          </td>
+                          <td className="py-4 text-sm">
+                            <Link to={`/auction/${item.auctionId}`} className="text-blue-600 hover:underline font-bold text-xs">Xem chi tiết</Link>
                           </td>
                         </tr>
                       ))}
@@ -422,7 +559,7 @@ const Profile = () => {
                 </div>
               )
             ) : (
-              mockBidsHistory.length === 0 ? (
+              bidsHistory.length === 0 ? (
                 <p className="text-center text-sm text-gray-400 py-12">Bạn chưa tham gia đấu giá sản phẩm nào.</p>
               ) : (
                 <div className="overflow-x-auto">
@@ -430,30 +567,16 @@ const Profile = () => {
                     <thead>
                       <tr className="border-b border-gray-200 text-gray-500">
                         <th className="pb-3.5 text-xs font-bold uppercase tracking-wider">ID</th>
-                        <th className="pb-3.5 text-xs font-bold uppercase tracking-wider">Sản phẩm</th>
                         <th className="pb-3.5 text-xs font-bold uppercase tracking-wider">Giá tôi đặt</th>
-                        <th className="pb-3.5 text-xs font-bold uppercase tracking-wider">Giá cao nhất</th>
                         <th className="pb-3.5 text-xs font-bold uppercase tracking-wider">Thời gian</th>
-                        <th className="pb-3.5 text-xs font-bold uppercase tracking-wider">Tình trạng</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {mockBidsHistory.map((item) => (
+                      {bidsHistory.map((item) => (
                         <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
                           <td className="py-4 text-sm text-gray-400 font-mono">#{item.id}</td>
-                          <td className="py-4 text-sm font-bold text-gray-900">{item.title}</td>
-                          <td className="py-4 text-sm font-semibold text-gray-600">{formatCurrency(item.myBid)}</td>
-                          <td className="py-4 text-sm font-bold text-blue-600">{formatCurrency(item.maxBid)}</td>
-                          <td className="py-4 text-xs text-gray-500">{item.time}</td>
-                          <td className="py-4 text-sm">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
-                              item.status === 'LEADING' 
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                                : 'bg-rose-50 text-rose-700 border-rose-200'
-                            }`}>
-                              {item.status}
-                            </span>
-                          </td>
+                          <td className="py-4 text-sm font-semibold text-gray-600">{formatCurrency(item.bidAmount)}</td>
+                          <td className="py-4 text-xs text-gray-500">{new Date(item.bidTime).toLocaleString('vi-VN')}</td>
                         </tr>
                       ))}
                     </tbody>

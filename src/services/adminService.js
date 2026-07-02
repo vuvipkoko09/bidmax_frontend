@@ -387,6 +387,16 @@ export const adminService = {
     return response.data;
   },
 
+  // === 18. CONTACTS ===
+  getAllContacts: async () => {
+    const response = await API.get('/admin/contact');
+    return response.data;
+  },
+  markContactAsRead: async (id) => {
+    const response = await API.put(`/admin/contact/${id}/read`);
+    return response.data;
+  },
+
   // === DASHBOARD GENERAL STATS ===
   getDashboardStats: async (startDate, endDate) => {
     const params = new URLSearchParams();

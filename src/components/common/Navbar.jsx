@@ -82,11 +82,12 @@ const Navbar = () => {
           
           {user ? (
             <div className="flex items-center gap-5">
-              {(user.role === 'SELLER' || user.role === 'ADMIN' || user.role?.toUpperCase() === 'SELLER' || user.role?.toUpperCase() === 'ADMIN') && (
-                <Link to="/seller/my-auctions" className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold text-sm rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap">
-                  <FiPlus className="w-4 h-4" /> Đặt bán
-                </Link>
-              )}
+              <Link 
+                to={(!user || user.role === 'USER') ? "/register-seller" : "/seller/my-auctions"} 
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold text-sm rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+              >
+                <FiPlus className="w-4 h-4" /> Đặt bán
+              </Link>
               
               <Link to="/watchlists" className="text-gray-500 hover:text-rose-500 transition-colors relative" title="Sản phẩm yêu thích">
                 <FiHeart className="w-5 h-5" />
@@ -117,11 +118,9 @@ const Navbar = () => {
                         <FiUser className="w-4 h-4" /> Hồ sơ cá nhân
                       </Link>
                       
-                      {(user.role === 'SELLER' || user.role === 'ADMIN' || user.role?.toUpperCase() === 'SELLER' || user.role?.toUpperCase() === 'ADMIN') && (
-                        <Link to="/seller/my-auctions" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600">
-                          <FiBox className="w-4 h-4" /> Quản lý sản phẩm
-                        </Link>
-                      )}
+                      <Link to={(!user || user.role === 'USER') ? "/register-seller" : "/seller/my-auctions"} onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600">
+                        <FiBox className="w-4 h-4" /> Quản lý sản phẩm
+                      </Link>
 
                       {(user.role === 'ADMIN' || user.role?.toUpperCase() === 'ADMIN') && (
                         <Link to="/admin" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 border-t border-gray-100">
@@ -194,11 +193,9 @@ const Navbar = () => {
                 <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-lg text-gray-700">
                   <FiUser /> Hồ sơ cá nhân ({user.username})
                 </Link>
-                {(user.role === 'SELLER' || user.role === 'ADMIN' || user.role?.toUpperCase() === 'SELLER' || user.role?.toUpperCase() === 'ADMIN') && (
-                  <Link to="/seller/my-auctions" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-lg text-gray-700">
-                    <FiBox /> Quản lý sản phẩm
-                  </Link>
-                )}
+                <Link to={(!user || user.role === 'USER') ? "/register-seller" : "/seller/my-auctions"} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-lg text-gray-700">
+                  <FiBox /> Quản lý sản phẩm
+                </Link>
                 {(user.role === 'ADMIN' || user.role?.toUpperCase() === 'ADMIN') && (
                   <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-lg text-blue-600">
                     <FiSettings /> Trang Quản trị

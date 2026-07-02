@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       // Fetch users to populate full user object (role, balance, id, email, etc.)
-      const response = await API.get('/users');
+      const response = await API.get('/users', { params: { _t: new Date().getTime() } });
       // In case response is wrapped in standard axios response structure
       const users = response.data || response;
       
@@ -123,7 +123,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, setUser, token, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

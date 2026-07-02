@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { FiLock, FiMail, FiUser, FiInfo, FiCheckCircle, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import API from '../../services/api';
@@ -191,7 +191,7 @@ const Auth = () => {
             <div className="flex justify-between items-center">
               <label className="text-xs font-bold text-gray-600">Mật khẩu</label>
               {isLogin && (
-                <a href="#" className="text-[11px] font-bold text-blue-600 hover:text-blue-700">Quên mật khẩu?</a>
+                <Link to="/forgot-password" className="text-[11px] font-bold text-blue-600 hover:text-blue-700">Quên mật khẩu?</Link>
               )}
             </div>
             <div className="relative">
@@ -215,19 +215,7 @@ const Auth = () => {
             )}
           </div>
 
-          {/* Role Dropdown - Sign Up Only */}
-          {!isLogin && (
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-600">Loại tài khoản (Vai trò)</label>
-              <select
-                {...register('roleName')}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:border-blue-500"
-              >
-                <option value="USER">Người dùng (Tham gia đấu giá)</option>
-                <option value="SELLER">Seller (Người bán hàng)</option>
-              </select>
-            </div>
-          )}
+
 
           {/* Submit Button */}
           <button 

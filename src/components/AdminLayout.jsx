@@ -20,7 +20,8 @@ import {
   FiArchive,
   FiChevronRight,
   FiPieChart,
-  FiSettings
+  FiSettings,
+  FiMessageSquare
 } from 'react-icons/fi';
 
 const AdminLayout = () => {
@@ -45,6 +46,7 @@ const AdminLayout = () => {
     { path: '/admin/reviews', label: 'Quản lý Đánh giá', icon: FiStar },
     { path: '/admin/news', label: 'Quản lý Tin tức', icon: FiBookOpen },
     { path: '/admin/notifications', label: 'Quản lý Thông báo', icon: FiBell },
+    { path: '/admin/contacts', label: 'Quản lý Liên hệ', icon: FiMessageSquare },
     { path: '/admin/watchlists', label: 'Danh sách theo dõi', icon: FiBookmark },
     { path: '/admin/audit-logs', label: 'Nhật ký hệ thống', icon: FiArchive },
     { path: '/admin/settings', label: 'Cấu hình hệ thống', icon: FiSettings }
