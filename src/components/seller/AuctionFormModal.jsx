@@ -45,9 +45,29 @@ const AuctionFormModal = ({ isOpen, onClose, onSuccess }) => {
       data.append('startPrice', formData.startPrice);
       data.append('stepPrice', formData.stepPrice);
       data.append('categoryId', formData.categoryId);
-      // Backend expecting endTime like 2026-06-30T18:00
-      data.append('endTime', formData.endTime);
-      data.append('sellerId', user.id);
+      const end = new Date(formData.endTime);
+      const now = new Date();
+      // Ensure the dates are sequential for backend validation
+      const totalDuration = end.getTime() - now.getTime();
+      const regEnd = new Date(now.getTime() + totalDuration / 3);
+      const bidStart = new Date(now.getTime() + (totalDuration * 2) / 3);
+
+      // Local datetime formatting to YYYY-MM-DDTHH:mm:ss
+      const formatLocal = (d) => {
+        const offset = d.getTimezoneOffset() * 60000;
+        return new Date(d.getTime() - offset).toISOString().slice(0, 19);
+      };
+
+      data.append('regStartTime', formatLocal(now));
+      data.append('regEndTime', formatLocal(regEnd));
+      data.append('bidStartTime', formatLocal(bidStart));
+      
+      let endTimeStr = formData.endTime;
+      if (endTimeStr.length === 16) {
+        endTimeStr += ':00';
+      }
+      data.append('bidEndTime', endTimeStr);
+      data.append('sellerId', user?.id || 1);
       
       if (formData.image) {
         data.append('image', formData.image);

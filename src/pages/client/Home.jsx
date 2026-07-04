@@ -49,7 +49,11 @@ const Home = () => {
         });
 
         // Transform backend auctions to match AuctionCard props
-        const mappedAuctions = auctionsData.slice(0, 4).map(auc => {
+        const activeAuctions = auctionsData
+          .filter(a => a.status === 'ACTIVE')
+          .sort((a, b) => b.id - a.id); // Show newest active auctions first
+
+        const mappedAuctions = activeAuctions.slice(0, 8).map(auc => {
           // Calculate time left from bidEndTime
           let hoursLeft = 0;
           let minutesLeft = 0;
@@ -235,7 +239,7 @@ const Home = () => {
           ) : auctions.length === 0 ? (
             <div className="text-center py-10 text-gray-500">Hiện chưa có phiên đấu giá nào.</div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 gap-8 max-w-5xl mx-auto">
               {auctions.map((auc) => (
                 <AuctionCard key={auc.id} auction={auc} />
               ))}
