@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import adminService from '../../services/adminService';
 import { FiPlus, FiTrash2, FiEdit2, FiTrendingUp, FiCheck } from 'react-icons/fi';
+import Modal from '../../components/common/Modal';
 
 const AuctionManage = () => {
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [formData, setFormData] = useState({ title: '', startingPrice: '', endTime: '' });
+  const [editingAuction, setEditingAuction] = useState(null);
 
   const fetchAuctions = async () => {
     try {
@@ -26,22 +30,20 @@ const AuctionManage = () => {
     fetchAuctions();
   }, []);
 
-  const handleCreateAuction = async () => {
-    const title = window.prompt('Nhập tiêu đề phiên đấu giá:');
-    if (!title) return;
+  const handleCreateAuction = () => {
+    setFormData({ title: '', startingPrice: '', endTime: '' });
+    setIsCreateModalOpen(true);
+  };
 
-    const startPriceStr = window.prompt('Nhập giá khởi điểm (VND):');
-    if (!startPriceStr) return;
-    const startingPrice = parseFloat(startPriceStr) || 0;
-
-    const endTime = window.prompt('Nhập thời gian kết thúc (YYYY-MM-DD HH:mm):');
-    if (!endTime) return;
+  const submitCreate = async (e) => {
+    e.preventDefault();
+    const startingPrice = parseFloat(formData.startingPrice) || 0;
 
     const newAuction = {
-      title,
+      title: formData.title,
       startingPrice,
       currentPrice: startingPrice,
-      endTime,
+      endTime: formData.endTime,
       status: 'ACTIVE'
     };
 
@@ -49,8 +51,9 @@ const AuctionManage = () => {
       setLoading(true);
       setError('');
       setSuccess('');
+      setIsCreateModalOpen(false);
       await adminService.createAuction(newAuction);
-      setSuccess(`Đã tạo thành công phiên đấu giá: ${title}`);
+      setSuccess(`Đã tạo thành công phiên đấu giá: ${formData.title}`);
       await fetchAuctions();
     } catch (err) {
       console.error('Error creating auction:', err);
@@ -114,8 +117,6 @@ const AuctionManage = () => {
     }
   };
 
-  const [editingAuction, setEditingAuction] = useState(null);
-
   const handleEditAuction = (auction) => {
     setEditingAuction({ ...auction });
   };
@@ -126,6 +127,11 @@ const AuctionManage = () => {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const submitEditAuction = async (e) => {
@@ -272,67 +278,82 @@ const AuctionManage = () => {
           </table>
         </div>
       )}
-      {/* Edit Modal */}
-      {editingAuction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-900">Chỉnh sửa phiên đấu giá #{editingAuction.id}</h3>
-              <button onClick={() => setEditingAuction(null)} className="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
-            </div>
-            <div className="p-6 overflow-y-auto flex-1">
-              <form id="edit-auction-form" onSubmit={submitEditAuction} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="col-span-1 md:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Tiêu đề</label>
-                  <input type="text" name="title" value={editingAuction.title || ''} onChange={handleEditFormChange} className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required />
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Trạng thái</label>
-                  <select name="status" value={editingAuction.status || ''} onChange={handleEditFormChange} className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    <option value="PENDING">PENDING</option>
-                    <option value="ACTIVE">ACTIVE</option>
-                    <option value="SOLD">SOLD</option>
-                    <option value="UNSOLD">UNSOLD</option>
-                    <option value="PAID">PAID</option>
-                  </select>
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Giá khởi điểm</label>
-                  <input type="number" name="startPrice" value={editingAuction.startPrice || ''} onChange={handleEditFormChange} className="w-full border border-gray-300 rounded-lg p-2" required />
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Bước giá</label>
-                  <input type="number" name="stepPrice" value={editingAuction.stepPrice || ''} onChange={handleEditFormChange} className="w-full border border-gray-300 rounded-lg p-2" required />
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Tiền cọc</label>
-                  <input type="number" name="depositAmount" value={editingAuction.depositAmount || ''} onChange={handleEditFormChange} className="w-full border border-gray-300 rounded-lg p-2" required />
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Bắt đầu đăng ký</label>
-                  <input type="datetime-local" name="regStartTime" value={editingAuction.regStartTime ? editingAuction.regStartTime.substring(0,16) : ''} onChange={handleEditFormChange} className="w-full border border-gray-300 rounded-lg p-2" />
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Kết thúc đăng ký</label>
-                  <input type="datetime-local" name="regEndTime" value={editingAuction.regEndTime ? editingAuction.regEndTime.substring(0,16) : ''} onChange={handleEditFormChange} className="w-full border border-gray-300 rounded-lg p-2" />
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Bắt đầu đấu giá</label>
-                  <input type="datetime-local" name="bidStartTime" value={editingAuction.bidStartTime ? editingAuction.bidStartTime.substring(0,16) : ''} onChange={handleEditFormChange} className="w-full border border-gray-300 rounded-lg p-2" />
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Kết thúc đấu giá</label>
-                  <input type="datetime-local" name="bidEndTime" value={editingAuction.bidEndTime ? editingAuction.bidEndTime.substring(0,16) : ''} onChange={handleEditFormChange} className="w-full border border-gray-300 rounded-lg p-2" />
-                </div>
-              </form>
-            </div>
-            <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
-              <button type="button" onClick={() => setEditingAuction(null)} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 font-semibold transition-colors">Hủy bỏ</button>
-              <button type="submit" form="edit-auction-form" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors">Lưu thay đổi</button>
-            </div>
+
+      {/* Create Modal */}
+      <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="Thêm mới phiên đấu giá">
+        <form onSubmit={submitCreate} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Tiêu đề</label>
+            <input type="text" name="title" value={formData.title} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none" required placeholder="Nhập tiêu đề phiên đấu giá..." />
           </div>
-        </div>
-      )}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Giá khởi điểm (VND)</label>
+            <input type="number" name="startingPrice" value={formData.startingPrice} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none" required placeholder="Nhập giá khởi điểm..." />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Thời gian kết thúc</label>
+            <input type="datetime-local" name="endTime" value={formData.endTime} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none" required />
+          </div>
+          <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
+            <button type="button" onClick={() => setIsCreateModalOpen(false)} className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition-colors">Hủy</button>
+            <button type="submit" className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors shadow-sm shadow-blue-600/20">Lưu lại</button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal isOpen={!!editingAuction} onClose={() => setEditingAuction(null)} title={`Chỉnh sửa phiên đấu giá #${editingAuction?.id}`}>
+        {editingAuction && (
+          <form id="edit-auction-form" onSubmit={submitEditAuction} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="col-span-1 md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Tiêu đề</label>
+              <input type="text" name="title" value={editingAuction.title || ''} onChange={handleEditFormChange} className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none" required />
+            </div>
+            <div className="col-span-1">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Trạng thái</label>
+              <select name="status" value={editingAuction.status || ''} onChange={handleEditFormChange} className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="PENDING">PENDING</option>
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="SOLD">SOLD</option>
+                <option value="UNSOLD">UNSOLD</option>
+                <option value="PAID">PAID</option>
+              </select>
+            </div>
+            <div className="col-span-1">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Giá khởi điểm</label>
+              <input type="number" name="startPrice" value={editingAuction.startPrice || ''} onChange={handleEditFormChange} className="w-full border border-gray-300 rounded-lg p-2" required />
+            </div>
+            <div className="col-span-1">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Bước giá</label>
+              <input type="number" name="stepPrice" value={editingAuction.stepPrice || ''} onChange={handleEditFormChange} className="w-full border border-gray-300 rounded-lg p-2" required />
+            </div>
+            <div className="col-span-1">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Tiền cọc</label>
+              <input type="number" name="depositAmount" value={editingAuction.depositAmount || ''} onChange={handleEditFormChange} className="w-full border border-gray-300 rounded-lg p-2" required />
+            </div>
+            <div className="col-span-1">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Bắt đầu đăng ký</label>
+              <input type="datetime-local" name="regStartTime" value={editingAuction.regStartTime ? editingAuction.regStartTime.substring(0,16) : ''} onChange={handleEditFormChange} className="w-full border border-gray-300 rounded-lg p-2" />
+            </div>
+            <div className="col-span-1">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Kết thúc đăng ký</label>
+              <input type="datetime-local" name="regEndTime" value={editingAuction.regEndTime ? editingAuction.regEndTime.substring(0,16) : ''} onChange={handleEditFormChange} className="w-full border border-gray-300 rounded-lg p-2" />
+            </div>
+            <div className="col-span-1">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Bắt đầu đấu giá</label>
+              <input type="datetime-local" name="bidStartTime" value={editingAuction.bidStartTime ? editingAuction.bidStartTime.substring(0,16) : ''} onChange={handleEditFormChange} className="w-full border border-gray-300 rounded-lg p-2" />
+            </div>
+            <div className="col-span-1">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Kết thúc đấu giá</label>
+              <input type="datetime-local" name="bidEndTime" value={editingAuction.bidEndTime ? editingAuction.bidEndTime.substring(0,16) : ''} onChange={handleEditFormChange} className="w-full border border-gray-300 rounded-lg p-2" />
+            </div>
+            <div className="col-span-1 md:col-span-2 pt-4 flex justify-end gap-3 border-t border-gray-100 mt-2">
+              <button type="button" onClick={() => setEditingAuction(null)} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition-colors">Hủy bỏ</button>
+              <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors">Lưu thay đổi</button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 };

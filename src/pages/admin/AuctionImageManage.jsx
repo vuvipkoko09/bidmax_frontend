@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import adminService from '../../services/adminService';
 import { FiPlus, FiTrash2, FiEdit2, FiImage } from 'react-icons/fi';
+import Modal from '../../components/common/Modal';
 
 const AuctionImageManage = () => {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [formData, setFormData] = useState({ auctionId: '' });
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
 
   const fetchImages = async () => {
     try {
@@ -26,46 +32,44 @@ const AuctionImageManage = () => {
     fetchImages();
   }, []);
 
-  const handleCreateImage = async () => {
-    const auctionIdStr = window.prompt('Nhập ID phiên đấu giá (Auction ID):');
-    if (!auctionIdStr) return;
-    const auctionId = parseInt(auctionIdStr) || 0;
+  const handleCreateImage = () => {
+    setFormData({ auctionId: '' });
+    setSelectedFile(null);
+    setIsCreateModalOpen(true);
+  };
 
-    // Tạo thẻ input file ẩn để cho người dùng chọn ảnh
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = 'image/*';
+  const submitCreate = async (e) => {
+    e.preventDefault();
+    const auctionId = parseInt(formData.auctionId) || 0;
     
-    fileInput.onchange = async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+    if (!selectedFile) {
+      setError('Vui lòng chọn một ảnh để tải lên.');
+      return;
+    }
 
-      try {
-        setLoading(true);
-        setError('');
-        setSuccess('');
-        
-        // 1. Gọi API Upload File lên Cloudinary
-        setSuccess(`Đang tải ảnh lên Cloudinary...`);
-        const uploadResult = await adminService.uploadFile(file);
-        const imageUrl = uploadResult.imageUrl;
+    try {
+      setLoading(true);
+      setError('');
+      setSuccess('');
+      setIsCreateModalOpen(false);
+      
+      // 1. Gọi API Upload File lên Cloudinary
+      setSuccess(`Đang tải ảnh lên Cloudinary...`);
+      const uploadResult = await adminService.uploadFile(selectedFile);
+      const imageUrl = uploadResult.imageUrl;
 
-        // 2. Lưu đường dẫn ảnh vào Database
-        setSuccess(`Đang lưu thông tin ảnh vào Database...`);
-        const newImage = { auctionId, imageUrl, isPrimary: false };
-        await adminService.createAuctionImage(newImage);
-        
-        setSuccess(`Đã thêm thành công ảnh cho phiên đấu giá ID: ${auctionId}`);
-        await fetchImages();
-      } catch (err) {
-        console.error('Error uploading/creating auction image:', err);
-        setError('Lỗi khi tải hình ảnh lên hoặc lưu vào CSDL.');
-        setLoading(false);
-      }
-    };
-    
-    // Mở hộp thoại chọn file
-    fileInput.click();
+      // 2. Lưu đường dẫn ảnh vào Database
+      setSuccess(`Đang lưu thông tin ảnh vào Database...`);
+      const newImage = { auctionId, imageUrl, isPrimary: false };
+      await adminService.createAuctionImage(newImage);
+      
+      setSuccess(`Đã thêm thành công ảnh cho phiên đấu giá ID: ${auctionId}`);
+      await fetchImages();
+    } catch (err) {
+      console.error('Error uploading/creating auction image:', err);
+      setError('Lỗi khi tải hình ảnh lên hoặc lưu vào CSDL.');
+      setLoading(false);
+    }
   };
 
   const handleDeleteImage = async (id) => {
@@ -85,38 +89,49 @@ const AuctionImageManage = () => {
     }
   };
 
-  const handleEditMock = async (img) => {
-    // Để sửa, cũng dùng input file thay vì prompt URL
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = 'image/*';
-    
-    fileInput.onchange = async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+  const handleEditMock = (img) => {
+    setEditingItem(img);
+    setSelectedFile(null);
+    setIsEditModalOpen(true);
+  };
 
-      try {
-        setLoading(true);
-        setError('');
-        setSuccess('');
-        
-        setSuccess(`Đang tải ảnh cập nhật lên Cloudinary...`);
-        const uploadResult = await adminService.uploadFile(file);
-        const imageUrl = uploadResult.imageUrl;
+  const submitEdit = async (e) => {
+    e.preventDefault();
+    if (!selectedFile) {
+      setError('Vui lòng chọn ảnh mới để thay thế.');
+      setIsEditModalOpen(false);
+      return;
+    }
 
-        setSuccess(`Đang cập nhật thông tin ảnh trong Database...`);
-        await adminService.updateAuctionImage(img.id, { ...img, imageUrl });
-        
-        setSuccess(`Đã cập nhật thành công ảnh ID: ${img.id}`);
-        await fetchImages();
-      } catch (err) {
-        console.error('Error updating auction image:', err);
-        setError('Lỗi khi cập nhật hình ảnh.');
-        setLoading(false);
-      }
-    };
-    
-    fileInput.click();
+    try {
+      setLoading(true);
+      setError('');
+      setSuccess('');
+      setIsEditModalOpen(false);
+      
+      setSuccess(`Đang tải ảnh cập nhật lên Cloudinary...`);
+      const uploadResult = await adminService.uploadFile(selectedFile);
+      const imageUrl = uploadResult.imageUrl;
+
+      setSuccess(`Đang cập nhật thông tin ảnh trong Database...`);
+      await adminService.updateAuctionImage(editingItem.id, { ...editingItem, imageUrl });
+      
+      setSuccess(`Đã cập nhật thành công ảnh ID: ${editingItem.id}`);
+      await fetchImages();
+    } catch (err) {
+      console.error('Error updating auction image:', err);
+      setError('Lỗi khi cập nhật hình ảnh.');
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e) => {
+    setSelectedFile(e.target.files[0]);
   };
 
   return (
@@ -204,6 +219,42 @@ const AuctionImageManage = () => {
           </table>
         </div>
       )}
+
+      {/* Create Modal */}
+      <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="Thêm mới ảnh đấu giá">
+        <form onSubmit={submitCreate} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">ID Phiên đấu giá (Auction ID)</label>
+            <input type="number" name="auctionId" value={formData.auctionId} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required placeholder="Nhập ID phiên đấu giá..." />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Chọn Ảnh</label>
+            <input type="file" accept="image/*" onChange={handleFileChange} className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none" required />
+          </div>
+          <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
+            <button type="button" onClick={() => setIsCreateModalOpen(false)} className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition-colors">Hủy</button>
+            <button type="submit" className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors shadow-sm shadow-blue-600/20">Tải lên</button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title={`Cập nhật ảnh #${editingItem?.id}`}>
+        <form onSubmit={submitEdit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Ảnh hiện tại</label>
+            {editingItem?.imageUrl && <img src={editingItem.imageUrl} alt="current" className="w-24 h-24 object-cover rounded-lg border border-gray-200 mb-3" />}
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Chọn ảnh mới thay thế</label>
+            <input type="file" accept="image/*" onChange={handleFileChange} className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none" required />
+          </div>
+          <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
+            <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition-colors">Hủy</button>
+            <button type="submit" className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors shadow-sm shadow-blue-600/20">Cập nhật</button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

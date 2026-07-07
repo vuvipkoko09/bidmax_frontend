@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import adminService from '../../services/adminService';
 import { FiPlus, FiTrash2, FiEdit2, FiStar } from 'react-icons/fi';
+import Modal from '../../components/common/Modal';
 
 const ReviewManage = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [formData, setFormData] = useState({ auctionId: '', senderName: '', rating: '5', comment: '' });
+  const [editingItem, setEditingItem] = useState(null);
 
   const fetchReviews = async () => {
     try {
@@ -26,28 +31,25 @@ const ReviewManage = () => {
     fetchReviews();
   }, []);
 
-  const handleCreateReview = async () => {
-    const auctionIdStr = window.prompt('Nhập ID phiên đấu giá (Auction ID):');
-    if (!auctionIdStr) return;
-    const auctionId = parseInt(auctionIdStr) || 0;
+  const handleCreateReview = () => {
+    setFormData({ auctionId: '', senderName: '', rating: '5', comment: '' });
+    setIsCreateModalOpen(true);
+  };
 
-    const senderName = window.prompt('Nhập tên người gửi đánh giá:');
-    if (!senderName) return;
+  const submitCreate = async (e) => {
+    e.preventDefault();
+    const auctionId = parseInt(formData.auctionId) || 0;
+    const rating = parseInt(formData.rating) || 5;
 
-    const ratingStr = window.prompt('Nhập điểm đánh giá (1-5):');
-    if (!ratingStr) return;
-    const rating = parseInt(ratingStr) || 5;
-
-    const comment = window.prompt('Nhập bình luận đánh giá:');
-
-    const newReview = { auctionId, senderName, rating, comment: comment || '', createdAt: new Date().toISOString() };
+    const newReview = { auctionId, senderName: formData.senderName, rating, comment: formData.comment || '', createdAt: new Date().toISOString() };
 
     try {
       setLoading(true);
       setError('');
       setSuccess('');
+      setIsCreateModalOpen(false);
       await adminService.createReview(newReview);
-      setSuccess(`Đã tạo thành công đánh giá từ: ${senderName}`);
+      setSuccess(`Đã tạo thành công đánh giá từ: ${formData.senderName}`);
       await fetchReviews();
     } catch (err) {
       console.error('Error creating review:', err);
@@ -74,7 +76,21 @@ const ReviewManage = () => {
   };
 
   const handleEditMock = (rev) => {
-    window.prompt(`Cập nhật phản hồi đánh giá của: ${rev.senderName}`, rev.comment);
+    setEditingItem(rev);
+    setFormData({ auctionId: rev.auctionId || '', senderName: rev.senderName || '', rating: rev.rating || '5', comment: rev.comment || '' });
+    setIsEditModalOpen(true);
+  };
+
+  const submitEdit = async (e) => {
+    e.preventDefault();
+    console.log(`Cập nhật phản hồi đánh giá của: ${editingItem.senderName}`, formData.comment);
+    setSuccess(`Đã cập nhật giả lập đánh giá ID=${editingItem.id}`);
+    setIsEditModalOpen(false);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   return (
@@ -160,6 +176,58 @@ const ReviewManage = () => {
           </table>
         </div>
       )}
+
+      {/* Create Modal */}
+      <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="Thêm mới đánh giá">
+        <form onSubmit={submitCreate} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">ID Phiên đấu giá (Auction ID)</label>
+            <input type="number" name="auctionId" value={formData.auctionId} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required placeholder="Nhập ID phiên đấu giá..." />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Tên người gửi</label>
+            <input type="text" name="senderName" value={formData.senderName} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required placeholder="Nhập tên người gửi..." />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Điểm đánh giá (1-5)</label>
+            <input type="number" min="1" max="5" name="rating" value={formData.rating} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Bình luận</label>
+            <textarea name="comment" value={formData.comment} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" rows="3" placeholder="Nhập bình luận..."></textarea>
+          </div>
+          <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
+            <button type="button" onClick={() => setIsCreateModalOpen(false)} className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition-colors">Hủy</button>
+            <button type="submit" className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors shadow-sm shadow-blue-600/20">Lưu lại</button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title={`Cập nhật đánh giá #${editingItem?.id}`}>
+        <form onSubmit={submitEdit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">ID Phiên đấu giá (Auction ID)</label>
+            <input type="number" name="auctionId" value={formData.auctionId} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Tên người gửi</label>
+            <input type="text" name="senderName" value={formData.senderName} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Điểm đánh giá (1-5)</label>
+            <input type="number" min="1" max="5" name="rating" value={formData.rating} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Bình luận</label>
+            <textarea name="comment" value={formData.comment} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" rows="3"></textarea>
+          </div>
+          <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
+            <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition-colors">Hủy</button>
+            <button type="submit" className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors shadow-sm shadow-blue-600/20">Cập nhật</button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

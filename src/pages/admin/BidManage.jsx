@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import adminService from '../../services/adminService';
 import { FiPlus, FiTrash2, FiEdit2, FiActivity } from 'react-icons/fi';
+import Modal from '../../components/common/Modal';
 
 const BidManage = () => {
   const [bids, setBids] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [formData, setFormData] = useState({ auctionId: '', userName: '', bidAmount: '' });
+  const [editingItem, setEditingItem] = useState(null);
 
   const fetchBids = async () => {
     try {
@@ -26,20 +31,19 @@ const BidManage = () => {
     fetchBids();
   }, []);
 
-  const handleCreateBid = async () => {
-    const auctionId = window.prompt('Nhập ID sản phẩm đấu giá:');
-    if (!auctionId) return;
+  const handleCreateBid = () => {
+    setFormData({ auctionId: '', userName: '', bidAmount: '' });
+    setIsCreateModalOpen(true);
+  };
 
-    const userName = window.prompt('Nhập tên người dùng (user name):');
-    if (!userName) return;
-
-    const bidAmountStr = window.prompt('Nhập số tiền đặt (VND):');
-    if (!bidAmountStr) return;
-    const bidAmount = parseFloat(bidAmountStr) || 0;
+  const submitCreate = async (e) => {
+    e.preventDefault();
+    const auctionId = parseInt(formData.auctionId) || 0;
+    const bidAmount = parseFloat(formData.bidAmount) || 0;
 
     const newBid = {
-      auctionId: parseInt(auctionId),
-      userName,
+      auctionId,
+      userName: formData.userName,
       bidAmount,
       bidTime: new Date().toISOString().replace('T', ' ').substring(0, 16)
     };
@@ -48,8 +52,9 @@ const BidManage = () => {
       setLoading(true);
       setError('');
       setSuccess('');
+      setIsCreateModalOpen(false);
       await adminService.createBid(newBid);
-      setSuccess(`Đã tạo thành công lượt đặt giá của: ${userName}`);
+      setSuccess(`Đã tạo thành công lượt đặt giá của: ${formData.userName}`);
       await fetchBids();
     } catch (err) {
       console.error('Error creating bid:', err);
@@ -80,7 +85,21 @@ const BidManage = () => {
   };
 
   const handleEditMock = (bid) => {
-    window.prompt(`Cập nhật số tiền đặt giá:`, bid.bidAmount);
+    setEditingItem(bid);
+    setFormData({ auctionId: bid.auctionId || '', userName: bid.userName || '', bidAmount: bid.bidAmount || '' });
+    setIsEditModalOpen(true);
+  };
+
+  const submitEdit = async (e) => {
+    e.preventDefault();
+    console.log(`Cập nhật số tiền đặt giá:`, formData.bidAmount);
+    setSuccess(`Đã cập nhật giả lập số tiền đặt giá cho Bid ID=${editingItem.id}`);
+    setIsEditModalOpen(false);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   return (
@@ -166,6 +185,50 @@ const BidManage = () => {
           </table>
         </div>
       )}
+
+      {/* Create Modal */}
+      <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="Thêm mới lượt đặt giá">
+        <form onSubmit={submitCreate} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">ID Sản phẩm (Auction ID)</label>
+            <input type="number" name="auctionId" value={formData.auctionId} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required placeholder="Nhập ID phiên đấu giá..." />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Tên người dùng</label>
+            <input type="text" name="userName" value={formData.userName} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required placeholder="Nhập tên người dùng..." />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Số tiền đặt (VND)</label>
+            <input type="number" name="bidAmount" value={formData.bidAmount} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required placeholder="Nhập số tiền..." />
+          </div>
+          <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
+            <button type="button" onClick={() => setIsCreateModalOpen(false)} className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition-colors">Hủy</button>
+            <button type="submit" className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors shadow-sm shadow-blue-600/20">Lưu lại</button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title={`Cập nhật đặt giá #${editingItem?.id}`}>
+        <form onSubmit={submitEdit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">ID Người dùng (User ID)</label>
+            <input type="number" name="userId" value={formData.userId} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">ID Phiên đấu giá (Auction ID)</label>
+            <input type="number" name="auctionId" value={formData.auctionId} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Số tiền đặt (VND)</label>
+            <input type="number" name="bidAmount" value={formData.bidAmount} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required />
+          </div>
+          <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
+            <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition-colors">Hủy</button>
+            <button type="submit" className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors shadow-sm shadow-blue-600/20">Cập nhật</button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

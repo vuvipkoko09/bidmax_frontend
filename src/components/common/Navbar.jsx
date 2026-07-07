@@ -41,14 +41,14 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 bg-white shadow-md">
       <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto">
-        
+
         {/* === Cụm Trái === */}
         <div className="flex items-center gap-8">
           <Link to="/" className="font-extrabold text-2xl tracking-tight text-gray-900 flex items-center gap-1.5">
             <span className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-sm shadow-md">🔨</span>
             Bid<span className="text-blue-600">Max</span>
           </Link>
-          
+
           {/* Desktop Links */}
           <div className="flex items-center gap-6 font-semibold text-sm text-gray-600">
             <Link to="/" className="hover:text-blue-600 transition-colors">Trang chủ</Link>
@@ -64,7 +64,7 @@ const Navbar = () => {
         {/* === Cụm Giữa (Search Bar - Desktop) === */}
         <form onSubmit={handleSearchSubmit} className="flex-1 max-w-lg mx-8">
           <div className="relative w-full">
-            <input 
+            <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -79,29 +79,29 @@ const Navbar = () => {
 
         {/* === Cụm Phải === */}
         <div className="flex items-center gap-4">
-          
+
           {user ? (
             <div className="flex items-center gap-5">
-              <Link 
-                to={(!user || user.role === 'USER') ? "/register-seller" : "/seller/my-auctions"} 
+              <Link
+                to={(!user || user.role === 'USER') ? "/register-seller" : "/seller/my-auctions"}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold text-sm rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
               >
                 <FiPlus className="w-4 h-4" /> Đặt bán
               </Link>
-              
+
               <Link to="/watchlists" className="text-gray-500 hover:text-rose-500 transition-colors relative" title="Sản phẩm yêu thích">
                 <FiHeart className="w-5 h-5" />
                 <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full"></span>
               </Link>
-              
+
               {/* User Dropdown */}
-              <div 
-                className="relative group" 
+              <div
+                className="relative group"
                 ref={dropdownRef}
                 onMouseEnter={() => setIsDropdownOpen(true)}
                 onMouseLeave={() => setIsDropdownOpen(false)}
               >
-                <Link 
+                <Link
                   to="/profile"
                   className="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-semibold text-sm transition-colors focus:outline-none"
                 >
@@ -117,7 +117,7 @@ const Navbar = () => {
                       <Link to="/profile" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600">
                         <FiUser className="w-4 h-4" /> Hồ sơ cá nhân
                       </Link>
-                      
+
                       <Link to={(!user || user.role === 'USER') ? "/register-seller" : "/seller/my-auctions"} onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600">
                         <FiBox className="w-4 h-4" /> Quản lý sản phẩm
                       </Link>
@@ -128,7 +128,7 @@ const Navbar = () => {
                         </Link>
                       )}
 
-                      <button 
+                      <button
                         onClick={handleLogout}
                         className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 font-bold border-t border-gray-100 transition-colors"
                       >
@@ -151,7 +151,7 @@ const Navbar = () => {
           )}
 
           {/* Hamburger Menu Icon (Mobile) */}
-          <button 
+          <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="md:hidden text-gray-500 hover:text-gray-900 p-1 transition-colors"
           >
@@ -164,7 +164,7 @@ const Navbar = () => {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white border-t border-gray-100 px-6 py-4 space-y-4 shadow-inner">
           <form onSubmit={handleSearchSubmit} className="relative">
-            <input 
+            <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -184,7 +184,7 @@ const Navbar = () => {
             <Link to="/about" onClick={() => setIsMobileMenuOpen(false)} className="px-3 py-2 hover:bg-gray-50 rounded-lg">Giới thiệu</Link>
             <Link to="/faq" onClick={() => setIsMobileMenuOpen(false)} className="px-3 py-2 hover:bg-gray-50 rounded-lg">FAQ</Link>
             <Link to="/contact" onClick={() => setIsMobileMenuOpen(false)} className="px-3 py-2 hover:bg-gray-50 rounded-lg">Liên hệ</Link>
-            
+
             {user ? (
               <div className="border-t border-gray-100 mt-2 pt-2">
                 <Link to="/watchlists" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-lg text-rose-500">

@@ -17,12 +17,16 @@ const OrderManage = () => {
   const [editingOrder, setEditingOrder] = useState(null);
 
   const schema = yup.object().shape({
+    userId: yup.number().typeError('ID Người dùng phải là số').required('Bắt buộc nhập ID người dùng'),
+    auctionId: yup.number().typeError('ID Phiên đấu giá phải là số').required('Bắt buộc nhập ID phiên đấu giá'),
+    totalPrice: yup.number().typeError('Tổng tiền phải là số').required('Bắt buộc nhập tổng tiền'),
+    shippingAddress: yup.string().required('Địa chỉ giao hàng là bắt buộc'),
     status: yup.string().required('Trạng thái là bắt buộc'),
   });
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: { status: 'PENDING' }
+    defaultValues: { userId: '', auctionId: '', totalPrice: '', shippingAddress: '', status: 'PENDING' }
   });
 
   const fetchOrders = async () => {
@@ -45,13 +49,19 @@ const OrderManage = () => {
 
   const openCreateModal = () => {
     setEditingOrder(null);
-    reset({ status: 'PENDING' });
+    reset({ userId: '', auctionId: '', totalPrice: '', shippingAddress: '', status: 'PENDING' });
     setIsModalOpen(true);
   };
 
   const openEditModal = (order) => {
     setEditingOrder(order);
-    reset({ status: order.status || 'PENDING' });
+    reset({ 
+      userId: order.userId || '', 
+      auctionId: order.auctionId || '', 
+      totalPrice: order.totalPrice || order.amount || '', 
+      shippingAddress: order.shippingAddress || '', 
+      status: order.status || 'PENDING' 
+    });
     setIsModalOpen(true);
   };
 
@@ -206,19 +216,65 @@ const OrderManage = () => {
         title={editingOrder ? 'Cập nhật Trạng thái Đơn hàng' : 'Thêm Đơn hàng mới'}
       >
         <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Trạng thái (Status) <span className="text-red-500">*</span></label>
-            <select 
-              {...register('status')}
-              className={`w-full px-4 py-2 border ${errors.status ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
-            >
-              <option value="PENDING">PENDING</option>
-              <option value="PAID">PAID</option>
-              <option value="SHIPPED">SHIPPED</option>
-              <option value="DELIVERED">DELIVERED</option>
-              <option value="CANCELLED">CANCELLED</option>
-            </select>
-            {errors.status && <p className="text-red-500 text-xs italic mt-1">{errors.status.message}</p>}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">ID Người dùng <span className="text-red-500">*</span></label>
+              <input 
+                type="number"
+                {...register('userId')}
+                className={`w-full px-4 py-2 border ${errors.userId ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
+                placeholder="Nhập User ID..."
+              />
+              {errors.userId && <p className="text-red-500 text-xs italic mt-1">{errors.userId.message}</p>}
+            </div>
+
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">ID Phiên đấu giá <span className="text-red-500">*</span></label>
+              <input 
+                type="number"
+                {...register('auctionId')}
+                className={`w-full px-4 py-2 border ${errors.auctionId ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
+                placeholder="Nhập Auction ID..."
+              />
+              {errors.auctionId && <p className="text-red-500 text-xs italic mt-1">{errors.auctionId.message}</p>}
+            </div>
+
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tổng tiền (VND) <span className="text-red-500">*</span></label>
+              <input 
+                type="number"
+                {...register('totalPrice')}
+                className={`w-full px-4 py-2 border ${errors.totalPrice ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
+                placeholder="Nhập tổng giá trị..."
+              />
+              {errors.totalPrice && <p className="text-red-500 text-xs italic mt-1">{errors.totalPrice.message}</p>}
+            </div>
+
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Trạng thái (Status) <span className="text-red-500">*</span></label>
+              <select 
+                {...register('status')}
+                className={`w-full px-4 py-2 border ${errors.status ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
+              >
+                <option value="PENDING">PENDING</option>
+                <option value="PAID">PAID</option>
+                <option value="SHIPPED">SHIPPED</option>
+                <option value="DELIVERED">DELIVERED</option>
+                <option value="CANCELLED">CANCELLED</option>
+              </select>
+              {errors.status && <p className="text-red-500 text-xs italic mt-1">{errors.status.message}</p>}
+            </div>
+
+            <div className="col-span-1 md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ giao hàng <span className="text-red-500">*</span></label>
+              <textarea 
+                {...register('shippingAddress')}
+                rows={3}
+                className={`w-full px-4 py-2 border ${errors.shippingAddress ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
+                placeholder="Nhập địa chỉ giao hàng..."
+              />
+              {errors.shippingAddress && <p className="text-red-500 text-xs italic mt-1">{errors.shippingAddress.message}</p>}
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-gray-100">
